@@ -34,19 +34,67 @@ public class MapGenerator : MonoBehaviour
             Destroy(go);
         }
         generated_objects.Clear();
-        
-        generated_objects.Add(start.Place(new Vector2Int(0,0)));
-        List<Door> doors = start.GetDoors();
-        List<Vector2Int> occupied = new List<Vector2Int>();
+
+        generated_objects.Add(start.Place(new Vector2Int(0, 0))); // first room
+        List<Door> doors = start.GetDoors(); // doors with no matching door
+        List<Vector2Int> occupied = new List<Vector2Int>(); // all occupied positions 
         occupied.Add(new Vector2Int(0, 0));
         iterations = 0;
         GenerateWithBacktracking(occupied, doors, 1);
+
+
+        // Place rooms after done with backtracking
+        // when placing a room upwards or to the left you have to adjusts the coords 
     }
 
 
     bool GenerateWithBacktracking(List<Vector2Int> occupied, List<Door> doors, int depth)
     {
         if (iterations > THRESHOLD) throw new System.Exception("Iteration limit exceeded");
+
+        // if not open doors then we can stop
+        if (doors.Count == 0)
+        {
+            return true;
+        }
+
+        var door = doors[0];
+        foreach (var room in rooms)
+        {
+            if (room.HasDoorOnSide(door.GetMatchingDirection()))
+            {
+                Debug.Log("Found a Matching room");
+                var coordinates = door.GetMatching().GetGridCoordinates();
+                
+                // coords should be adjusted if were going up or left
+                Debug.Log(room.GetGridSize());
+                if (door.GetDirection() == Door.Direction.NORTH)
+                {
+                    coordinates -= new Vector2Int(0, room.GetGridSize()[1]);
+                }
+
+                if (door.GetDirection() == Door.Direction.WEST)
+                {
+                    coordinates -= new Vector2Int(room.GetGridSize()[0], 0);
+                }
+                // update list of open doors ( add new and remove old )
+                // check occupied, make sure this new room is not on any old rooms
+                // updated occupied add this room
+
+                // backtrack -- pass in copy of lists
+                // if return true then continue
+                // if return false undo changes
+                room.Place(coordinates);
+                // instantiate a hallway with the correct direction
+            }
+        }
+        // foreach (var door in doors) {
+        //     Debug.Log(door.GetMatching().GetGridCoordinates());
+        // }
+        // 
+        
+
+        iterations++;
         return false;
     }
 
