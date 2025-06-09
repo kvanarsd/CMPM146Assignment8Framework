@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
+using Unity.VisualScripting;
 
 public class MapGenerator : MonoBehaviour
 {
@@ -37,65 +38,111 @@ public class MapGenerator : MonoBehaviour
 
         generated_objects.Add(start.Place(new Vector2Int(0, 0))); // first room
         List<Door> doors = start.GetDoors(); // doors with no matching door
-        List<Vector2Int> occupied = new List<Vector2Int>(); // all occupied positions 
-        occupied.Add(new Vector2Int(0, 0));
+        Dictionary<Vector2Int, Room> occupied = new() // all occupied positions
+        {
+            { new Vector2Int(0, 0), start }
+        };
         iterations = 0;
         GenerateWithBacktracking(occupied, doors, 1);
-
 
         // Place rooms after done with backtracking
         // when placing a room upwards or to the left you have to adjusts the coords 
     }
 
+    public static List<T> CloneList<T>(List<T> input)
+    {
+        var output = new List<T>();
+        foreach (var item in input) output.Add(item);
+        return output;
+    }
 
-    bool GenerateWithBacktracking(List<Vector2Int> occupied, List<Door> doors, int depth)
+    public static Dictionary<K, V> CloneDictionary<K, V>(Dictionary<K, V> input)
+    {
+        var output = new Dictionary<K, V>();
+        foreach (var (key, value) in input) output.Add(key, value);
+        return output;
+    }
+
+    bool GenerateWithBacktracking(Dictionary<Vector2Int, Room> occupied, List<Door> doors, int depth)
     {
         if (iterations > THRESHOLD) throw new System.Exception("Iteration limit exceeded");
+        iterations++;
+        
+        if (doors.Count == 0) return true; // if not open doors then we can stop
 
-        // if not open doors then we can stop
-        if (doors.Count == 0)
+        Door door = null;
+
+        // Find a door on the frontier (this is so that we don't need to remove anything form doors as that seems hard to do accuratly in all scenarios.)
+        for (int i = 0; i < doors.Count; i++)
         {
+            Door tempDoor = doors[i];
+            if (!occupied.ContainsKey(tempDoor.GetMatching().GetGridCoordinates()))
+            {
+                door = tempDoor;
+                break;
+            }
+        }
+
+        if (door == null)
+        {
+            Debug.Log("no door found!");
             return true;
         }
 
-        var door = doors[0];
-        foreach (var room in rooms)
+        Vector2Int pos = door.GetMatching().GetGridCoordinates();
+
+        List<Room> options = FindValidRooms(pos, occupied);
+
+        foreach (var room in options)
         {
-            if (room.HasDoorOnSide(door.GetMatchingDirection()))
+            Dictionary<Vector2Int, Room> newOccupied = CloneDictionary(occupied);
+            List<Door> newDoors = CloneList(doors);
+            newOccupied.Add(pos, room);
+            foreach (Door newDoor in room.GetDoors(pos)) newDoors.Add(newDoor);
+            bool worked = GenerateWithBacktracking(newOccupied, newDoors, depth + 1);
+            if (worked)
             {
-                Debug.Log("Found a Matching room");
-                var coordinates = door.GetMatching().GetGridCoordinates();
-                
-                // coords should be adjusted if were going up or left
-                Debug.Log(room.GetGridSize());
-                if (door.GetDirection() == Door.Direction.NORTH)
-                {
-                    coordinates -= new Vector2Int(0, room.GetGridSize()[1]);
-                }
-
-                if (door.GetDirection() == Door.Direction.WEST)
-                {
-                    coordinates -= new Vector2Int(room.GetGridSize()[0], 0);
-                }
-                // update list of open doors ( add new and remove old )
-                // check occupied, make sure this new room is not on any old rooms
-                // updated occupied add this room
-
-                // backtrack -- pass in copy of lists
-                // if return true then continue
-                // if return false undo changes
-                room.Place(coordinates);
-                // instantiate a hallway with the correct direction
+                generated_objects.Add(room.Place(pos));
+                return true;
             }
         }
-        // foreach (var door in doors) {
-        //     Debug.Log(door.GetMatching().GetGridCoordinates());
-        // }
-        // 
         
-
-        iterations++;
         return false;
+    }
+
+    public List<Room> FindValidRooms(Vector2Int pos, Dictionary<Vector2Int, Room> occupied)
+    {
+        Vector2Int eastPos = pos + new Vector2Int(1, 0);
+        Vector2Int westPos = pos + new Vector2Int(-1, 0);
+        Vector2Int northPos = pos + new Vector2Int(0, 1);
+        Vector2Int southPos = pos + new Vector2Int(0, -1);
+        Room east = occupied.GetValueOrDefault(eastPos);
+        Room west = occupied.GetValueOrDefault(westPos);
+        Room north = occupied.GetValueOrDefault(northPos);
+        Room south = occupied.GetValueOrDefault(southPos);
+
+        List<Room> options = new();
+        foreach (var room in rooms)
+        {
+
+            if (east && (room.HasDoorOnSide(Door.Direction.EAST) != east.HasDoorOnSide(Door.Direction.WEST))) continue;
+            if (west && (room.HasDoorOnSide(Door.Direction.WEST) != west.HasDoorOnSide(Door.Direction.EAST))) continue;
+            if (north && (room.HasDoorOnSide(Door.Direction.NORTH) != north.HasDoorOnSide(Door.Direction.SOUTH))) continue;
+            if (south && (room.HasDoorOnSide(Door.Direction.SOUTH) != south.HasDoorOnSide(Door.Direction.NORTH))) continue;
+            options.Add(room);
+        }
+        Shuffle(options);
+        return options;
+    }
+
+    // TODO PAIC
+    public static void Shuffle<T>(IList<T> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (list[j], list[i]) = (list[i], list[j]);
+        }
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created

@@ -21,21 +21,23 @@ public class Door
         return this.direction;
     }
 
-    public Vector2Int GetGridCoordinates()
-    {
-        return new Vector2Int(coordinates.x / Room.GRID_SIZE, coordinates.y / Room.GRID_SIZE);
+    public Vector2Int GetGridCoordinates() {
+        static int fdiv(int a, int b) => Mathf.FloorToInt((float)a / b);
+        return new Vector2Int(
+            fdiv(coordinates.x, Room.GRID_SIZE), 
+            fdiv(coordinates.y, Room.GRID_SIZE)
+        );
     }
 
     public Door GetMatching()
     {
         switch (direction)
         {
-            case Direction.EAST: return new Door(coordinates + new Vector2Int(2, 0), Direction.WEST);
-            case Direction.WEST: return new Door(coordinates + new Vector2Int(-2, 0), Direction.EAST);
+            case Direction.EAST:  return new Door(coordinates + new Vector2Int( 2,0), Direction.WEST);
+            case Direction.WEST:  return new Door(coordinates + new Vector2Int(-2,0), Direction.EAST);
             case Direction.NORTH: return new Door(coordinates + new Vector2Int(0, 2), Direction.SOUTH);
-            case Direction.SOUTH: return new Door(coordinates + new Vector2Int(0, -2), Direction.NORTH);
+            default:              return new Door(coordinates + new Vector2Int(0,-2), Direction.NORTH); // Direction.SOUTH
         }
-        return null;
     }
 
     public bool IsMatching(Door other)
