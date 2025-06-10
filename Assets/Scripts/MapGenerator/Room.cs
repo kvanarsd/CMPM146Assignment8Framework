@@ -8,6 +8,7 @@ public class Room : MonoBehaviour
     public const int GRID_SIZE = 12;
     public Tilemap tiles;
     public int weight;
+    public Vector2Int position;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -88,6 +89,7 @@ public class Room : MonoBehaviour
     public GameObject Place(Vector2Int where)
     {
         var new_room = Instantiate(this, new Vector3(where.x * GRID_SIZE, where.y * GRID_SIZE), Quaternion.identity);
+        position = where;
         return new_room.gameObject;
     }
 }

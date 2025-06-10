@@ -10,6 +10,7 @@ public class MapGenerator : MonoBehaviour
     public Hallway horizontal_hallway;
     public Room start;
     public Room target;
+    public int MIN_SIZE = 10;
 
     // Constraint: How big should the dungeon be at most
     // this will limit the run time (~10 is a good value 
@@ -67,8 +68,11 @@ public class MapGenerator : MonoBehaviour
     {
         if (iterations > THRESHOLD) throw new System.Exception("Iteration limit exceeded");
         iterations++;
-        
-        if (doors.Count == 0) return true; // if not open doors then we can stop
+
+        if (occupied.Count > MAX_SIZE)
+        {
+            return false;
+        }
 
         Door door = null;
 
@@ -85,7 +89,12 @@ public class MapGenerator : MonoBehaviour
 
         if (door == null)
         {
-            Debug.Log("no door found!");
+            if (depth < MIN_SIZE)
+            {
+                Debug.Log("Dungeon is too small keep going >:(");
+                return false;
+            }
+            //Debug.Log("no door found!");
             return true;
         }
 
@@ -102,7 +111,21 @@ public class MapGenerator : MonoBehaviour
             bool worked = GenerateWithBacktracking(newOccupied, newDoors, depth + 1);
             if (worked)
             {
+                
                 generated_objects.Add(room.Place(pos));
+                foreach (var hall_door in room.GetDoors(room.position))
+                {
+                    if (hall_door.GetDirection() == Door.Direction.NORTH)
+                    {
+                        generated_objects.Add(vertical_hallway.Place(hall_door));
+                    }
+
+                    if (hall_door.GetDirection() == Door.Direction.WEST)
+                    {
+                        generated_objects.Add(horizontal_hallway.Place(hall_door));
+                    }
+
+                }
                 return true;
             }
         }

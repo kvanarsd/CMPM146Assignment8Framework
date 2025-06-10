@@ -343,6 +343,7 @@ MonoBehaviour:
   horizontal_hallway: {fileID: 1508018506499616265, guid: da4748670254bcd48a9c066ed148bec1, type: 3}
   start: {fileID: 7328084662367532751, guid: fbb7b04d19af1aa4aad44cc45b15c4d1, type: 3}
   target: {fileID: 7328084662367532751, guid: 0b2779608081820479b40f34b30be409, type: 3}
+  MIN_SIZE: 5
   MAX_SIZE: 25
   THRESHOLD: 100000
 --- !u!4 &1893224133
